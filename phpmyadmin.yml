@@ -1,0 +1,56 @@
+#  == File: phpMyAdmin.yml
+#
+# Install & Configure PhpMyAdmin
+#
+#  == Copyright
+#     All Rights Reserved
+#
+# --------------------------------------------------------------------------
+# WARNING: This file belongs to the Core framework. Avoid any local changes
+# --------------------------------------------------------------------------
+#
+# This file is Managed by ANSIBLE
+# --------------------------------------------------------------------------
+
+
+- block:
+- name: Check directories
+  stat:
+    path: '/usr/share/phpmyadmin'
+  register: directory_data
+
+- debug: var=directory_data.stat.path
+
+- name: Create directory if it doesn't already exist
+file:
+  path: '/usr/share/phpmyadmin'
+  state: directory
+  mode: 0755
+  group: apache
+  owner: apache
+when: not directory_data.stat.exists
+
+- name: "Install phpMyAdmin - Step1"
+  shell: cp -r /srv/shared/external-softwares/phpmyadmin /usr/share/
+
+- name: "Install phpMyAdmin - Step2"
+  shell: cd /usr/share/phpmyadmin
+
+- name: Transfer phpMyAdmin.conf file - Step3
+  copy: src="{{ansible_roles_path}}/files/phpMyAdmin/phpmyadmin.conf" dest=/etc/httpd/conf.d/phpmyadmin.conf  mode=0755
+
+- name: Transfer config.inc.php file - Step 4
+  copy: src="{{ansible_roles_path}}/files/phpMyAdmin/config.inc.php" dest=/usr/share/phpmyadmin/config.inc.php  mode=0755
+
+
+- name: "Install phpMyAdmin - Step5"
+  shell: chown -R apache:apache /usr/share/phpmyadmin
+
+- name: "Install phpMyAdmin - Step6"
+  shell: chmod -R 0775 /usr/share/phpmyadmin/
+  
+- name: Restart Apache
+  service:
+     name: httpd
+     state: restarted
+     enabled: yes
